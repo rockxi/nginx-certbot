@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ошибка - Платформа Онлайн Обучения</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --bg-0: #000;
+            --bg-1: #060d06;
+            --bg-2: #0b1b0b;
+            --grid: rgba(0,255,140,0.06);
+            --text: #c8ffd7;
+            --text-dim: #9cebb9;
+            --neon: #00ff88;
+            --neon-2: #00e676;
+            --danger: #ff4d4d;
+            --shadow: 0 0 12px rgba(0,255,136,0.35), 0 0 28px rgba(0,255,136,0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Share Tech Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            line-height: 1.6;
+            color: var(--text);
+            background: radial-gradient(1200px 800px at 50% -10%, rgba(0,255,136,0.07), transparent 60%),
+                        linear-gradient(180deg, var(--bg-1), var(--bg-0));
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body::before,
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        body::before {
+            background-image: repeating-linear-gradient(90deg, transparent 0 94px, var(--grid) 94px 95px),
+                            repeating-linear-gradient(180deg, rgba(0,255,140,0.035) 0 2px, transparent 2px 6px);
+            animation: rain 14s linear infinite;
+        }
+
+        body::after {
+            background: radial-gradient(1100px 600px at 20% 10%, rgba(0,255,136,0.06), transparent 65%),
+                        radial-gradient(900px 600px at 80% 0%, rgba(0,255,136,0.04), transparent 60%),
+                        radial-gradient(1200px 500px at 50% 100%, rgba(0,0,0,0.65), transparent 70%);
+        }
+
+        @keyframes rain {
+            0% { background-position: 0 0, 0 0; }
+            100% { background-position: 0 600px, 0 480px; }
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { text-shadow: 0 0 8px rgba(0,255,136,.25); }
+            50% { text-shadow: 0 0 18px rgba(0,255,136,.55); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .error-container {
+            background: linear-gradient(135deg, rgba(11,27,11,.95), rgba(6,13,6,.85));
+            border: 1px solid rgba(0,255,136,.25);
+            border-radius: 12px;
+            padding: 3rem 2.5rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,.5), 0 0 60px rgba(0,255,136,.08);
+            text-align: center;
+            max-width: 600px;
+            margin: 2rem;
+            animation: fadeIn .6s ease;
+        }
+
+        .error-code {
+            font-size: 6rem;
+            font-weight: 700;
+            color: var(--neon);
+            text-shadow: 0 0 30px rgba(0,255,136,.6), 0 0 60px rgba(0,255,136,.3);
+            margin-bottom: 1rem;
+            animation: glowPulse 3s ease-in-out infinite;
+            line-height: 1;
+        }
+
+        .error-title {
+            color: var(--text);
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 12px rgba(0,255,136,.35);
+            letter-spacing: .06em;
+        }
+
+        .error-message {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+            margin-bottom: 2.5rem;
+            line-height: 1.8;
+        }
+
+        .error-details {
+            background: rgba(0,0,0,.35);
+            border: 1px solid rgba(0,255,136,.2);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        .error-details h3 {
+            color: var(--neon-2);
+            font-size: 1rem;
+            margin-bottom: .75rem;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+        }
+
+        .error-details p {
+            color: var(--text);
+            font-size: .9rem;
+            margin: .5rem 0;
+            word-break: break-all;
+        }
+
+        .error-details strong {
+            color: var(--neon);
+        }
+
+        .btn-home {
+            display: inline-block;
+            padding: .85rem 2rem;
+            color: #eafff3;
+            background: linear-gradient(180deg, rgba(0,255,136,.2), rgba(0,0,0,.45));
+            border: 1px solid var(--neon);
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 1rem;
+            box-shadow: var(--shadow);
+            transition: transform .12s ease, box-shadow .2s ease;
+            cursor: pointer;
+        }
+
+        .btn-home:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0,255,136,.6), 0 0 40px rgba(0,255,136,.3);
+        }
+
+        .suggestions {
+            text-align: left;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: rgba(0,0,0,.25);
+            border-left: 3px solid var(--neon-2);
+            border-radius: 8px;
+        }
+
+        .suggestions h3 {
+            color: var(--text);
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .suggestions ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .suggestions li {
+            color: var(--text-dim);
+            font-size: .95rem;
+            margin: .5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .suggestions li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--neon);
+        }
+
+        .footer {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(0,255,136,.15);
+            color: var(--text-dim);
+            font-size: .85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-code">500</div>
+        <h1 class="error-title">Ошибка сервера (Nginx)</h1>
+        <p class="error-message">
+            Произошла внутренняя ошибка сервера. Пожалуйста, попробуйте позже.
+        </p>
+
+        <div class="suggestions">
+            <h3>Что можно сделать:</h3>
+            <ul>
+                <li>Обновить страницу через несколько минут</li>
+                <li>Проверить правильность введенного адреса</li>
+                <li>Вернуться на главную страницу</li>
+                <li>Связаться с администратором, если проблема повторяется</li>
+            </ul>
+        </div>
+
+        <a href="/" class="btn-home">Вернуться на главную</a>
+
+    </div>
+</body>
+</html>

@@ -9,6 +9,7 @@ services:
       - ./nginx/index.html:/usr/share/nginx/html/index.html
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
+      - ./nginx/error.html:/usr/share/nginx/html/error.html
     restart: unless-stopped
 
   certbot:
