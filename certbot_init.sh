@@ -1,1 +1,1 @@
-docker compose run --rm certbot certonly --webroot --webroot-path /var/www/certbot --email stroganovf.t@gmail.com -d kurs.rockxi.ru --agree-tos --no-eff-email
+docker run --rm -v ./certbot/conf:/etc/letsencrypt -v ./certbot/www:/var/www/certbot certbot/certbot certonly --webroot --webroot-path /var/www/certbot --email stroganovf.t@gmail.com -d cybersync.rockxi.ru --agree-tos --no-eff-email
