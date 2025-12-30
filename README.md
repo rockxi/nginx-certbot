@@ -4,6 +4,8 @@
 
 Nginx + Certbot + docker UI-configure compose for quick and easy configuration of reverse proxy and ssl certificates.
 
+https://github.com/user-attachments/assets/a2300450-fff8-47b8-b6af-14d0a05b60b5
+
 **1) Preload and write envs**
 ```bash
 git clone https://github.com/rockxi/nginx-certbot && cd nginx-certbot
