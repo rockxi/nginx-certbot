@@ -80,7 +80,6 @@ HTML_BASE = """
     </script>
 </head>
 <body class="min-h-screen flex flex-col relative">
-    <!-- Overlay Loader -->
     <div id="loader" class="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center backdrop-blur-sm">
         <div class="loader-spin mb-4"></div>
         <div id="loader-text" class="text-[#00ff9d] animate-pulse">PROCESSING...</div>
@@ -101,7 +100,6 @@ HTML_BASE = """
     </nav>
 
     <main class="flex-grow container mx-auto p-4 md:p-8">
-        <!-- Flash Messages -->
         {% if messages %}
             {% for msg in messages %}
             <div class="mb-6 p-4 border-l-4 {{ 'border-[#00ff9d] bg-[#00ff9d]/10' if 'Success' in msg else 'border-red-500 bg-red-900/20' }}">
@@ -144,9 +142,7 @@ HTML_DASHBOARD = """
 {% block content %}
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
     
-    <!-- LEFT PANEL: CONTROLS -->
     <div class="lg:col-span-4 space-y-6">
-        <!-- Add Proxy Widget -->
         <div class="glass p-6">
             <h3 class="text-lg font-bold text-white mb-4 border-b border-gray-800 pb-2 flex justify-between">
                 <span>NEW_CONNECTION</span>
@@ -167,7 +163,6 @@ HTML_DASHBOARD = """
             </form>
         </div>
 
-        <!-- System Controls -->
         <div class="glass p-6">
             <h3 class="text-sm font-bold text-gray-400 mb-4">SYSTEM_OPERATIONS</h3>
             <div class="grid grid-cols-2 gap-3">
@@ -181,7 +176,6 @@ HTML_DASHBOARD = """
         </div>
     </div>
 
-    <!-- RIGHT PANEL: ACTIVE NODES -->
     <div class="lg:col-span-8">
         <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
             ACTIVE_NODES <span class="bg-gray-800 text-gray-400 text-xs px-2 py-0.5 rounded">{{ sites|length }}</span>
@@ -209,7 +203,7 @@ HTML_DASHBOARD = """
 
                 <div class="flex items-center gap-3 w-full md:w-auto">
                     {% if not site.ssl %}
-                    <form action="/cert" method="POST" onsubmit="showLoader('EXECUTING CERTBOT SEQUENCE...\nStep 1: Verify HTTP\nStep 2: Request Cert\nStep 3: Update Nginx')">
+                    <form action="/cert" method="POST" onsubmit="showLoader('EXECUTING CERTBOT SEQUENCE...\\nStep 1: Verify HTTP\\nStep 2: Request Cert\\nStep 3: Update Nginx')">
                         <input type="hidden" name="domain" value="{{ site.domain }}">
                         <input type="hidden" name="target" value="{{ site.target }}">
                         <button class="btn border border-[#00ff9d] text-[#00ff9d] hover:bg-[#00ff9d] hover:text-black w-full md:w-auto">
@@ -231,11 +225,21 @@ HTML_DASHBOARD = """
             {% endfor %}
         </div>
 
-        <!-- Raw Config Viewer -->
         <div class="mt-8">
-            <details class="text-xs text-gray-500 cursor-pointer">
-                <summary class="hover:text-white transition-colors mb-2">VIEW_RAW_CONFIG_TAIL</summary>
-                <pre class="bg-black border border-gray-800 p-4 overflow-x-auto text-gray-400 font-mono">{{ raw_config }}</pre>
+            <details class="group">
+                <summary class="text-xs text-gray-500 cursor-pointer hover:text-white transition-colors mb-2 list-none flex items-center gap-2">
+                    <span class="border border-gray-700 px-2 py-1 bg-black group-open:bg-[#00ff9d] group-open:text-black transition-colors">EDIT_RAW_CONFIG</span>
+                    <span class="opacity-50 text-[10px]">Use with caution. Syntax errors will crash Nginx.</span>
+                </summary>
+                <form action="/config/save" method="POST" class="mt-4" onsubmit="showLoader('WRITING CONFIG TO DISK...')">
+                    <div class="relative">
+                        <textarea name="content" spellcheck="false" class="w-full h-[500px] bg-black border border-gray-700 p-4 text-gray-300 font-mono text-xs focus:outline-none focus:border-[#00ff9d] focus:ring-1 focus:ring-[#00ff9d] leading-relaxed">{{ raw_config }}</textarea>
+                        <div class="absolute bottom-4 right-4 opacity-50 text-[10px] text-gray-500 pointer-events-none">/etc/nginx/conf.d/default.conf</div>
+                    </div>
+                    <div class="flex justify-end mt-2">
+                        <button type="submit" class="btn btn-primary">SAVE_CHANGES</button>
+                    </div>
+                </form>
             </details>
         </div>
     </div>
@@ -470,13 +474,12 @@ async def dashboard(request: Request, user: str = Depends(require_auth)):
     # Флеш сообщения через сессию
     msgs = request.session.pop("messages", [])
     
-    raw = config_content[-1500:] if len(config_content) > 1500 else config_content
-
+    # Передаем весь конфиг для возможности полного редактирования
     return render_template("dashboard.html", {
         "request": request, 
         "user": user, 
         "sites": sites, 
-        "raw_config": raw,
+        "raw_config": config_content,
         "messages": msgs
     })
 
@@ -578,6 +581,15 @@ async def generate_cert(request: Request, domain: str = Form(...), target: str =
     await run_command(f"docker exec {NGINX_CONTAINER_NAME} nginx -s reload")
     
     request.session["messages"] = [f"Success: Certificate issued and HTTPS enabled for {domain}!"]
+    return RedirectResponse("/", status_code=302)
+
+@app.post("/config/save")
+async def save_manual_config(request: Request, content: str = Form(...), user: str = Depends(require_auth)):
+    # Нормализуем переносы строк на случай отправки с Windows/Browser
+    normalized_content = content.replace('\r\n', '\n')
+    await write_config(normalized_content)
+    
+    request.session["messages"] = ["Success: Config saved locally. Please click 'TEST CONFIG' then 'FORCE RELOAD' to apply."]
     return RedirectResponse("/", status_code=302)
 
 @app.post("/nginx/reload")
