@@ -18,7 +18,7 @@ EOF
 docker-compose up --build -d
 ```
 
-**3) Go to UI** - `localhost:1337`
+**3) Go to UI** - `yourdomain:1337` or `localhost:1337` (if you starts localy)
 
 **4) Enjoy!**
 
