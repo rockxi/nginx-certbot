@@ -273,8 +273,6 @@ server {
 
 
 
-
-
 server {
     listen 80;
     server_name uinx.rockxi.ru;
@@ -284,36 +282,9 @@ server {
     }
 
     location / {
-        return 301 https://$host$request_uri;
-    }
-}
-
-server {
-    listen 443 ssl;
-    http2 on;
-    server_name uinx.rockxi.ru;
-
-    ssl_certificate /etc/letsencrypt/live/uinx.rockxi.ru/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/uinx.rockxi.ru/privkey.pem;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_prefer_server_ciphers off;
-
-    error_page 404 500 502 503 504 /error.html;
-
-    location = /error.html {
-        root /usr/share/nginx/html;
-        internal;
-    }
-
-    location / {
-        proxy_pass http://localhost:1337/;
+        proxy_pass http://localhost:1337//;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        
-        # WebSocket Support
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
     }
 }
