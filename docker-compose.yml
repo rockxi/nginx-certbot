@@ -5,7 +5,7 @@ services:
     network_mode: "host"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-      - ./nginx/index.html:/usr/share/nginx/html/index.html
+      - ./html:/usr/share/nginx/html2
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
       - ./nginx/error.html:/usr/share/nginx/html/error.html
