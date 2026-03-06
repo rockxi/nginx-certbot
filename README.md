@@ -1,4 +1,14 @@
-# UINX 
+# UINX
+
+## Install in one command
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rockxi/nginx-certbot/main/install.sh | sh
+```
+
+The script will ask for your admin credentials and email, then deploy everything automatically.
+
+---
 
 ## UI+WEB service for Nginx administration with fast SSL/TLS certificates issue.
 

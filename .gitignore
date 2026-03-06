@@ -1,2 +1,14 @@
-certbot
 .env
+nginx/default.conf
+nginx/*.bak
+nginx/*.backup
+
+# Certbot generated files, but keep directory structure
+certbot/conf/*
+certbot/www/*
+!certbot/conf/.gitkeep
+!certbot/www/.gitkeep
+
+# Static html files, but keep directory
+html/*
+!html/.gitkeep

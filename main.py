@@ -32,15 +32,37 @@ HOST_CERTBOT_WWW_DIR = os.path.join(HOST_BASE_DIR, "certbot/www")
 
 # Настройки Docker и Email
 NGINX_CONTAINER_NAME = "nginx-server"
-EMAIL = "stroganovf.t@gmail.com"
+EMAIL = os.getenv("CERTBOT_EMAIL", "")
 
 # Логирование
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("uinx")
 
+_config_lock = asyncio.Lock()
+
+DOMAIN_RE = re.compile(r'^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$')
+
+def is_valid_domain(domain: str) -> bool:
+    return bool(DOMAIN_RE.match(domain)) and len(domain) <= 253
+
+def is_valid_target(target: str) -> bool:
+    return (
+        target.startswith(('http://', 'https://'))
+        and '\n' not in target
+        and ';' not in target
+        and '{' not in target
+    )
+
 app = FastAPI(title="UINX", docs_url=None, redoc_url=None)
-# Используем сессии для flash-сообщений и простой авторизации
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+
+@app.on_event("startup")
+async def startup_event():
+    if not os.path.exists(NGINX_CONF_PATH):
+        os.makedirs(os.path.dirname(NGINX_CONF_PATH), exist_ok=True)
+        with open(NGINX_CONF_PATH, 'w') as f:
+            f.write("# UINX - manage this config via the web UI\n")
+        logger.info(f"Created empty nginx config at {NGINX_CONF_PATH}")
 
 # ==========================================
 # HTML ШАБЛОНЫ (UI)
@@ -281,12 +303,12 @@ async def run_command(cmd: str):
 async def read_config():
     if not os.path.exists(NGINX_CONF_PATH):
         return ""
-    async with asyncio.Lock(): # Простейшая защита от гонки
+    async with _config_lock:
         with open(NGINX_CONF_PATH, 'r') as f:
             return f.read()
 
 async def write_config(content: str):
-    async with asyncio.Lock():
+    async with _config_lock:
         # Бэкап
         if os.path.exists(NGINX_CONF_PATH):
             os.system(f"cp {NGINX_CONF_PATH} {NGINX_CONF_PATH}.bak")
@@ -365,9 +387,9 @@ server {{
 """
 
 def get_pre_cert_config(domain: str, target: str) -> str:
+    """Конфиг, который создается при добавлении сайта (До SSL)"""
     if target[-1] == '/':
         target = target[:-1]
-    """Конфиг, который создается при добавлении сайта (До SSL)"""
     return f"""
 server {{
     listen 80;
@@ -388,6 +410,8 @@ server {{
 
 # === ШАГ 4: Финальный конфиг (HTTPS + HTTP Redirect) ===
 def get_ssl_config(domain: str, target: str) -> str:
+    if target[-1] == '/':
+        target = target[:-1]
     return f"""
 server {{
     listen 80;
@@ -489,9 +513,16 @@ async def dashboard(request: Request, user: str = Depends(require_auth)):
 async def add_site(request: Request, domain: str = Form(...), target: str = Form(...), user: str = Depends(require_auth)):
     domain = domain.strip()
     target = target.strip()
-    
+
+    if not is_valid_domain(domain):
+        request.session["messages"] = ["Error: Invalid domain name."]
+        return RedirectResponse("/", status_code=302)
+    if not is_valid_target(target):
+        request.session["messages"] = ["Error: Invalid target URL. Must start with http:// or https://."]
+        return RedirectResponse("/", status_code=302)
+
     content = await read_config()
-    
+
     if f"server_name {domain};" in content:
         request.session["messages"] = [f"Error: Domain {domain} already exists!"]
         return RedirectResponse("/", status_code=302)
@@ -512,10 +543,14 @@ async def add_site(request: Request, domain: str = Form(...), target: str = Form
 
 @app.post("/delete")
 async def delete_site(request: Request, domain: str = Form(...), user: str = Depends(require_auth)):
+    if not is_valid_domain(domain):
+        request.session["messages"] = ["Error: Invalid domain name."]
+        return RedirectResponse("/", status_code=302)
+
     content = await read_config()
     new_content = remove_domain_block(content, domain)
-    
-    if len(new_content) == len(content):
+
+    if new_content == content:
         request.session["messages"] = ["Error: Domain block not found."]
     else:
         await write_config(new_content)
@@ -529,6 +564,16 @@ async def generate_cert(request: Request, domain: str = Form(...), target: str =
     """
     Полный цикл получения сертификата по вашему ТЗ.
     """
+    if not is_valid_domain(domain):
+        request.session["messages"] = ["Error: Invalid domain name."]
+        return RedirectResponse("/", status_code=302)
+    if not is_valid_target(target):
+        request.session["messages"] = ["Error: Invalid target URL."]
+        return RedirectResponse("/", status_code=302)
+    if not EMAIL:
+        request.session["messages"] = ["Error: CERTBOT_EMAIL is not set in .env"]
+        return RedirectResponse("/", status_code=302)
+
     # 1. Убеждаемся, что конфиг правильный (HTTP only c well-known)
     # Удаляем старый блок и пишем чистый HTTP блок для certbot
     content = await read_config()
@@ -587,9 +632,19 @@ async def generate_cert(request: Request, domain: str = Form(...), target: str =
 async def save_manual_config(request: Request, content: str = Form(...), user: str = Depends(require_auth)):
     # Нормализуем переносы строк на случай отправки с Windows/Browser
     normalized_content = content.replace('\r\n', '\n')
+
+    # Сохраняем текущий конфиг для отката
+    original_content = await read_config()
     await write_config(normalized_content)
-    
-    request.session["messages"] = ["Success: Config saved locally. Please click 'TEST CONFIG' then 'FORCE RELOAD' to apply."]
+
+    # Проверяем синтаксис перед применением
+    code, out, err = await run_command(f"docker exec {NGINX_CONTAINER_NAME} nginx -t")
+    if code != 0:
+        # Откатываем на рабочий конфиг
+        await write_config(original_content)
+        request.session["messages"] = [f"Syntax Error: Changes reverted. {err}"]
+    else:
+        request.session["messages"] = ["Success: Config saved. Click 'FORCE RELOAD' to apply."]
     return RedirectResponse("/", status_code=302)
 
 @app.post("/nginx/reload")
