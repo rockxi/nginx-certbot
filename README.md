@@ -22,6 +22,7 @@ git clone https://github.com/rockxi/nginx-certbot && cd nginx-certbot
 cat >> .env << EOF
 ADMIN_USERNAME=admin      # !!! REPLACE WITH YOUR SECRET VALUES !!!
 ADMIN_PASSWORD=password
+EMAIL=example@mail.ru
 EOF
 ```
 
@@ -33,4 +34,3 @@ docker-compose up --build -d
 **3) Go to UI** - `yourdomain:1337` or `localhost:1337` (if you starts localy)
 
 **4) Enjoy!**
-
